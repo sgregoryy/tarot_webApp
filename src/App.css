@@ -131,7 +131,7 @@ h1 {
 .continue-button {
   padding: 12px 40px;
   font-size: 18px;
-  background-color: #28a745;
+  /* background-color: #28a745; */
   color: #fff;
   border: none;
   border-radius: 6px;
