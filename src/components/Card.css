@@ -8,7 +8,14 @@
     border-radius: 10px;
     position: relative;
   }
+
+  .card-exit {
+    transform: scale(0.5); /* Уменьшение размера */
+    opacity: 0; /* Уменьшение прозрачности */
+    transition: transform 0.5s ease, opacity 0.5s ease; /* Плавный переход */
+  }
   
+
   @media (max-width: 360px) {
     .card-container {
       width: 60px;

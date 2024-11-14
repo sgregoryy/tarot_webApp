@@ -1,9 +1,9 @@
-// src/components/Card.jsx
+// Card.jsx
 import React from 'react';
-import { motion } from 'framer-motion';
-import './Card.css'; // Убедитесь, что CSS импортирован
+import { motion, AnimatePresence } from 'framer-motion';
+import './Card.css';
 
-const Card = ({ card, onSelect, isSelected, imgSrc, backImage }) => {
+const Card = ({ card, onSelect, isSelected, imgSrc, backImage, onFlipComplete }) => {
   return (
     <div className="card-container" onClick={() => !isSelected && onSelect(card)}>
       <motion.div
@@ -11,10 +11,15 @@ const Card = ({ card, onSelect, isSelected, imgSrc, backImage }) => {
         animate={{
           rotateY: isSelected ? 180 : 0,
         }}
+        onAnimationComplete={() => {
+          if (isSelected) {
+            onFlipComplete?.(card.id);
+          }
+        }}
         transition={{
-          type: "spring",
-          stiffness: 300,
-          damping: 35,
+          type: "tween", // Используем tween вместо spring для более предсказуемой анимации
+          duration: 0.3,
+          ease: "easeIn"
         }}
       >
         <div className="card-back">

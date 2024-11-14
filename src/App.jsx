@@ -1,4 +1,3 @@
-// App.jsx
 import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Card from './components/Card';
@@ -9,8 +8,11 @@ import './App.css';
 const App = () => {
   const [selectedCards, setSelectedCards] = useState([]);
   const [isSelectionComplete, setIsSelectionComplete] = useState(false);
+  const [showContinueButton, setShowContinueButton] = useState(false);
   const [cards, setCards] = useState([]);
   const [cardWidth, setCardWidth] = useState(120);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [flippedCards, setFlippedCards] = useState(new Set());
   const windowSize = useWindowSize();
 
   const shuffleArray = (array) => {
@@ -29,7 +31,7 @@ const App = () => {
       .slice(0, 8)
       .map(cardName => ({
         id: cardName,
-        imgSrc: `/preImages/${cardName}.png`
+        imgSrc: `/preImages/${encodeURIComponent(cardName)}.png`
       }));
     setCards(shuffledCards);
   }, []);
@@ -44,14 +46,33 @@ const App = () => {
     }
   }, [windowSize.width]);
 
+  const handleFlipComplete = useCallback((cardId) => {
+    setFlippedCards(prev => {
+      const newSet = new Set(prev);
+      newSet.add(cardId);
+      return newSet;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (selectedCards.length === 3 && flippedCards.size === 3) {
+      // Увеличиваем задержку перед началом перемещения
+      setTimeout(() => {
+        setIsSelectionComplete(true);
+        // Увеличиваем задержку появления кнопки
+        setTimeout(() => {
+          setShowContinueButton(true);
+        }, 800);
+      }, 300);
+      setIsFlipping(false);
+    }
+  }, [selectedCards.length, flippedCards.size]);
+
   const getSelectedCardPosition = useCallback((index, totalSelected = 3, cardWidth) => {
     const isMobile = windowSize.width <= 500;
     const gap = isMobile ? 15 : 12;
-
     const totalWidth = (cardWidth * totalSelected) + (gap * (totalSelected - 1));
     const groupStartX = -totalWidth / 2 + cardWidth / 2;
-
-    // Добавляем небольшое смещение по Y для эффекта веера
     const yOffset = Math.abs(index - 1) * 5;
 
     return {
@@ -61,16 +82,15 @@ const App = () => {
   }, [windowSize.width]);
 
   const handleCardSelect = useCallback((card) => {
-    if (selectedCards.length < 3 && !selectedCards.find(c => c.id === card.id)) {
+    if (selectedCards.length < 3 && !selectedCards.find(c => c.id === card.id) && !isFlipping) {
+      setIsFlipping(true);
       setSelectedCards(prev => [...prev, card]);
-
-      if (selectedCards.length === 2) {
-        setTimeout(() => {
-          setIsSelectionComplete(true);
-        }, 800);
+      
+      if (selectedCards.length !== 2) {
+        setTimeout(() => setIsFlipping(false), 100); // Уменьшаем время блокировки
       }
     }
-  }, [selectedCards]);
+  }, [selectedCards, isFlipping]);
 
   const cardVariants = {
     normal: {
@@ -78,9 +98,10 @@ const App = () => {
       scale: 1,
       x: 0,
       y: 0,
+      filter: "blur(0px)",
       transition: {
-        duration: 0.6,
-        ease: "easeInOut"
+        duration: 0.2,
+        ease: "easeOut"
       }
     },
     selected: (custom) => ({
@@ -88,32 +109,30 @@ const App = () => {
       scale: 1,
       x: custom.x,
       y: custom.y,
+      filter: "blur(0px)",
       transition: {
         type: "spring",
-        stiffness: 50,
-        damping: 14,
-        mass: 0.8,
-        duration: 1.5
+        stiffness: 150, // Уменьшаем жесткость для более плавного движения
+        damping: 20,   // Настраиваем затухание
+        mass: 1,      // Увеличиваем массу для более медленного движения
+        duration: 1.2, // Увеличиваем длительность анимации
+        delay: 0.3    // Добавляем задержку после переворота
       }
     }),
     unselected: {
       opacity: 0,
-      scale: 0.8,
+      scale: 0.95,
+      filter: "blur(2px)",
       transition: {
-        duration: 1,
-        ease: [0.25, 0.1, 0.25, 1]
+        duration: 0.8, // Увеличиваем время исчезновения
+        delay: 0.2,   // Та же задержка, что и для selected
+        ease: [0.4, 0.0, 0.2, 1]
       }
-    },
-    spring: {
-      type: "spring",
-      stiffness: 100,
-      damping: 15,
-      mass: 0.8
     }
   };
 
   if (cards.length === 0) {
-    return <div className="App">Раскладываю карты...</div>;
+    return <div className="App">Раскладываем карты...</div>;
   }
 
   return (
@@ -136,7 +155,7 @@ const App = () => {
                   return (
                     <motion.div
                       key={card.id}
-                      layout
+                      layout={!isSelectionComplete || isSelected}
                       layoutId={`card-${card.id}`}
                       initial="normal"
                       animate={
@@ -148,28 +167,20 @@ const App = () => {
                       }
                       variants={cardVariants}
                       custom={position}
-                      drag={!isSelectionComplete && !isSelected ? false : undefined}
-                      whileDrag={{ scale: 1.1 }}
                       style={{
                         position: isSelectionComplete ? 'absolute' : 'relative',
                         zIndex: isSelected ? 2 : 1,
                         transformOrigin: 'center center',
-                        margin: '0 auto'
-                      }}
-                      transition={{
-                        layout: {
-                          type: "spring",
-                          stiffness: 50,
-                          damping: 14,
-                          mass: 0.8,
-                          duration: 1.5
-                        }
+                        margin: '0 auto',
+                        willChange: 'transform, opacity',
+                        transform: 'translateZ(0)'
                       }}
                     >
                       <Card
                         card={card}
                         onSelect={handleCardSelect}
                         isSelected={!!isSelected}
+                        onFlipComplete={handleFlipComplete}
                         imgSrc={card.imgSrc}
                         backImage="/images/back.jpg"
                       />
@@ -179,13 +190,16 @@ const App = () => {
               </AnimatePresence>
             </div>
           </div>
-          {isSelectionComplete && (
+          {showContinueButton && (
             <div className="button-container">
               <motion.button
                 className="continue-button"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
+                transition={{ 
+                  duration: 0.5,
+                  ease: "easeOut"
+                }}
                 style={{fontFamily: 'Playfair Display'}}
               >
                 Продолжить
