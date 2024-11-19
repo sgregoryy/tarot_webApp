@@ -17,9 +17,9 @@ const Card = ({ card, onSelect, isSelected, imgSrc, backImage, onFlipComplete })
           }
         }}
         transition={{
-          type: "tween", // Используем tween вместо spring для более предсказуемой анимации
-          duration: 0.3,
-          ease: "easeIn"
+          type: "spring", // Используем tween вместо spring для более предсказуемой анимации
+          duration: 0.2,
+          bounce: 0.25
         }}
       >
         <div className="card-back">

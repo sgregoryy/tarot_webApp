@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Card from './components/Card';
 import useWindowSize from './hooks/useWindowSize';
 import cardListData from './cardList.json';
+import buttonImage from '/images/button.jpg';
 import './App.css';
 
 const App = () => {
@@ -13,7 +14,24 @@ const App = () => {
   const [cardWidth, setCardWidth] = useState(120);
   const [isFlipping, setIsFlipping] = useState(false);
   const [flippedCards, setFlippedCards] = useState(new Set());
+  const [isButtonImageLoaded, setIsButtonImageLoaded] = useState(false);
+
   const windowSize = useWindowSize();
+
+  // Инициализация Telegram WebApp
+  const tg = window.Telegram?.WebApp;
+  useEffect(() => {
+    const img = new Image();
+    img.src = '/images/button.jpg'; // Убедитесь, что путь корректен
+    img.onload = () => {
+      setIsButtonImageLoaded(true);
+    };
+  }, []);
+  useEffect(() => {
+    if (tg) {
+      tg.ready();
+    }
+  }, [tg]);
 
   const shuffleArray = (array) => {
     let currentIndex = array.length, randomIndex;
@@ -28,7 +46,7 @@ const App = () => {
 
   useEffect(() => {
     const shuffledCards = shuffleArray([...cardListData])
-      .slice(0, 8)
+      .slice(0, 10)
       .map(cardName => ({
         id: cardName,
         imgSrc: `/preImages/${encodeURIComponent(cardName)}.png`
@@ -40,7 +58,7 @@ const App = () => {
     if (windowSize.width <= 360) {
       setCardWidth(60);
     } else if (windowSize.width <= 500) {
-      setCardWidth(70);
+      setCardWidth(90);
     } else {
       setCardWidth(120);
     }
@@ -56,10 +74,8 @@ const App = () => {
 
   useEffect(() => {
     if (selectedCards.length === 3 && flippedCards.size === 3) {
-      // Увеличиваем задержку перед началом перемещения
       setTimeout(() => {
         setIsSelectionComplete(true);
-        // Увеличиваем задержку появления кнопки
         setTimeout(() => {
           setShowContinueButton(true);
         }, 800);
@@ -70,7 +86,7 @@ const App = () => {
 
   const getSelectedCardPosition = useCallback((index, totalSelected = 3, cardWidth) => {
     const isMobile = windowSize.width <= 500;
-    const gap = isMobile ? 15 : 12;
+    const gap = isMobile ? 15 : 150;
     const totalWidth = (cardWidth * totalSelected) + (gap * (totalSelected - 1));
     const groupStartX = -totalWidth / 2 + cardWidth / 2;
     const yOffset = Math.abs(index - 1) * 5;
@@ -87,10 +103,28 @@ const App = () => {
       setSelectedCards(prev => [...prev, card]);
       
       if (selectedCards.length !== 2) {
-        setTimeout(() => setIsFlipping(false), 100); // Уменьшаем время блокировки
+        setTimeout(() => setIsFlipping(false), 100);
       }
     }
   }, [selectedCards, isFlipping]);
+
+  // Обработчик нажатия кнопки "Продолжить"
+  const handleContinueClick = useCallback(() => {
+    if (selectedCards.length === 3 && tg) {
+      // Формируем строку с названиями карт
+      const selectedCardNames = selectedCards
+        .map(card => card.id)
+        .join(',');
+
+      try {
+
+        tg.sendData(selectedCardNames);
+        tg.close();
+      } catch (error) {
+        console.error('Ошибка при отправке данных:', error);
+      }
+    }
+  }, [selectedCards, tg]);
 
   const cardVariants = {
     normal: {
@@ -112,11 +146,11 @@ const App = () => {
       filter: "blur(0px)",
       transition: {
         type: "spring",
-        stiffness: 150, // Уменьшаем жесткость для более плавного движения
-        damping: 20,   // Настраиваем затухание
-        mass: 1,      // Увеличиваем массу для более медленного движения
-        duration: 1.2, // Увеличиваем длительность анимации
-        delay: 0.3    // Добавляем задержку после переворота
+        stiffness: 150,
+        damping: 20,
+        mass: 1,
+        duration: 1.2,
+        delay: 0.3
       }
     }),
     unselected: {
@@ -124,8 +158,9 @@ const App = () => {
       scale: 0.95,
       filter: "blur(2px)",
       transition: {
-        duration: 0.8, // Увеличиваем время исчезновения
-        delay: 0.2,   // Та же задержка, что и для selected
+        type: "spring", 
+        duration: 0.8,
+        delay: 0.3,
         ease: [0.4, 0.0, 0.2, 1]
       }
     }
@@ -171,7 +206,7 @@ const App = () => {
                         position: isSelectionComplete ? 'absolute' : 'relative',
                         zIndex: isSelected ? 2 : 1,
                         transformOrigin: 'center center',
-                        margin: '0 auto',
+                        marginTop: '10px',
                         willChange: 'transform, opacity',
                         transform: 'translateZ(0)'
                       }}
@@ -182,7 +217,7 @@ const App = () => {
                         isSelected={!!isSelected}
                         onFlipComplete={handleFlipComplete}
                         imgSrc={card.imgSrc}
-                        backImage="/images/back.jpg"
+                        backImage="/images/back.png"
                       />
                     </motion.div>
                   );
@@ -190,21 +225,27 @@ const App = () => {
               </AnimatePresence>
             </div>
           </div>
-          {showContinueButton && (
-            <div className="button-container">
-              <motion.button
+          {showContinueButton && isButtonImageLoaded && (
+            <motion.div 
+              className="button-container"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.6,
+                ease: [0.4, 0, 0.2, 1], // Используем плавную кривую ease
+              }}
+            >
+              <button
                 className="continue-button"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ 
-                  duration: 0.5,
-                  ease: "easeOut"
+                onClick={handleContinueClick}
+                style={{ 
+                  fontFamily: 'Playfair Display',
+                  backgroundImage: `url(${buttonImage})`
                 }}
-                style={{fontFamily: 'Playfair Display'}}
               >
                 Продолжить
-              </motion.button>
-            </div>
+              </button>
+            </motion.div>
           )}
         </div>
       </div>

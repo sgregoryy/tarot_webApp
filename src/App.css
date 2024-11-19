@@ -106,48 +106,66 @@ h1 {
   transform-style: preserve-3d;
 } */
 
+/* .card{
+  will-change: transform, opacity;
+} */
+
 .card-grid {
   display: flex; /* Переключаемся на Flexbox */
-  flex-wrap: wrap; /* Позволяет картам переноситься на новую строку, если нужно */
+  flex-wrap: wrap-reverse; /* Позволяет картам переноситься на новую строку, если нужно */
   justify-content: center; /* Горизонтальное центрирование */
+  top: -5%;
   align-items: center; /* Вертикальное центрирование */
-  gap: 30px; /* Расстояние между картами */
+  gap: 20px; /* Расстояние между картами */
   position: relative; /* Для абсолютного позиционирования детей */
+  
   z-index: 4;
   width: fit-content;
-  margin: 0 auto;
+  margin: 0;
   /* Удалите transform-style: preserve-3d; */
 }
+
+/* В App.css обновляем стили контейнера кнопки */
 
 .button-container {
   position: fixed;
   bottom: 15%;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   z-index: 5;
-  width: auto;
+  will-change: opacity;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  perspective: 1000px;
+  /* Убираем transform, так как используем flex для центрирования */
 }
 
 .continue-button {
   padding: 12px 40px;
   font-size: 18px;
-  background-color: #28a745;
   color: #fff;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.3s;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   text-transform: none;
   font-weight: normal;
   white-space: nowrap;
-  background-image: url('images/button.jpg');
-  background-size: contain;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  -webkit-font-smoothing: antialiased;
+  transform: translateZ(0);
+  margin: 0 auto; /* Добавляем автоматические отступы по бокам */
+  position: relative; /* Добавляем для точного позиционирования */
 }
 
 .continue-button:hover {
-  background-color: #218838;
-  transform: translateY(-2px);
+  /* transform: translateY(-2px); */
   box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -168,14 +186,16 @@ h1 {
   }
 
   .card-grid {
-    grid-template-columns: repeat(4, 80px);
-    grid-template-rows: repeat(2, auto);
-    gap: 25px;
+    display: flex;
+    grid-template-columns: repeat(4, 90px);
+    grid-template-rows: repeat(2, 90px);
+    row-gap: 10px;
+    gap: 15px;
   }
 
   .card {
-    width: 80px;
-    height: 120px;
+    width: 90px;
+    height: 135px;
   }
 
   .continue-button {
@@ -207,6 +227,8 @@ h1 {
   }
 
   .card-grid {
+    top: -25%;
+    grid-template-columns: repeat(4, 90px);
     gap: 10px;
   }
 
